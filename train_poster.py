@@ -20,14 +20,14 @@ from data_preprocessing.sam import SAM
 from models.emotion_hyp import pyramid_trans_expr
 import head
 
-head_adaface = head.build_head(head_type='adaface',
-              embedding_size=512,
-              class_num=7,
-              m=0.4,
-              t_alpha=1.0,
-              h=0.333,
-              s=64.,
-              )
+# head_adaface = head.build_head(head_type='adaface',
+#               embedding_size=512,
+#               class_num=7,
+#               m=0.4,
+#               t_alpha=1.0,
+#               h=0.333,
+#               s=64.,
+#               )
 """
 head_arcface = head.build_head(head_type='arcface',
               embedding_size=512,
@@ -46,13 +46,13 @@ head_cosface = head.build_head(head_type='cosface',
               s=64.,
               )
 """
-def forward(images, labels, model):
-  norms, embeddings = model(images)
-  cos_thetas = head_adaface(embeddings, norms, labels)
-  if isinstance(cos_thetas, tuple):
-      cos_thetas, bad_grad = cos_thetas
-      labels[bad_grad.squeeze(-1)] = -100 # ignore_index
-  return cos_thetas, norms, embeddings, labels
+# def forward(images, labels, model):
+#   norms, embeddings = model(images)
+#   cos_thetas = head_adaface(embeddings, norms, labels)
+#   if isinstance(cos_thetas, tuple):
+#       cos_thetas, bad_grad = cos_thetas
+#       labels[bad_grad.squeeze(-1)] = -100 # ignore_index
+#   return cos_thetas, norms, embeddings, labels
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, default='rafdb', help='dataset')
@@ -100,7 +100,8 @@ def run_training():
         num_classes = 7
         train_dataset = RafDataSet(datapath, train=True, transform=data_transforms, basic_aug=True)
         val_dataset = RafDataSet(datapath, train=False, transform=data_transforms_val)
-        model = pyramid_trans_expr(img_size=224, num_classes=num_classes, type=args.modeltype)
+        # model = pyramid_trans_expr(img_size=224, num_classes=num_classes, type=args.modeltype)
+        model = pyramid_trans_expr_adaface(img_size=224, num_classes=num_classes, type=args.modeltype)
 
     elif args.dataset == "affectnet":
         datapath = './data/AffectNet/'
@@ -192,7 +193,7 @@ def run_training():
             # print(features.size())
             # print(targets.size())
 
-            cos_thetas, norms, embeddings, labels = forward(imgs, targets, model)
+            cos_thetas, norms, embeddings, labels = model(imgs, targets, model)
             CE_loss = CE_criterion(cos_thetas, targets)
             lsce_loss = lsce_criterion(outputs, targets)
             loss = 2 * lsce_loss + CE_loss
@@ -201,7 +202,7 @@ def run_training():
 
             # second forward-backward pass
             outputs, features = model(imgs)
-            cos_thetas, norms, embeddings, labels = forward(imgs, targets, model)
+            cos_thetas, norms, embeddings, labels = model(imgs, targets, model)
             CE_loss = CE_criterion(cos_thetas, targets)
             lsce_loss = lsce_criterion(outputs, targets)
 
@@ -232,10 +233,12 @@ def run_training():
             bingo_cnt = 0
             model.eval()
             for batch_i, (imgs, targets) in enumerate(val_loader):
-                outputs, features = model(imgs.cuda())
+                # outputs, features = model(imgs.cuda())
+                image = image.cuda()
                 targets = targets.cuda()
-
-                CE_loss = CE_criterion(outputs, targets)
+                cos_thetas, norms, embeddings, labels = model(imgs, targets)
+                CE_loss = CE_criterion(cos_thetas, targets)
+                # CE_loss = CE_criterion(outputs, targets)
                 loss = CE_loss
 
                 val_loss += loss
