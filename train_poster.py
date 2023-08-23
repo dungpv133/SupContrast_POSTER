@@ -17,8 +17,7 @@ from sklearn.metrics import f1_score, confusion_matrix
 from time import time
 from utils import *
 from data_preprocessing.sam import SAM
-from models.emotion_hyp import pyramid_trans_expr
-import head
+from models.emotion_hyp import pyramid_trans_expr, pyramid_trans_expr_adaface
 
 # head_adaface = head.build_head(head_type='adaface',
 #               embedding_size=512,
@@ -187,24 +186,24 @@ def run_training():
             iter_cnt += 1
             optimizer.zero_grad()
             imgs = imgs.cuda()
-            outputs, features = model(imgs)
+            # outputs, features = model(imgs)
             targets = targets.cuda()
             # print(outputs.size())
             # print(features.size())
             # print(targets.size())
 
-            cos_thetas, norms, embeddings, labels = model(imgs, targets, model)
+            cos_thetas, norms, embeddings, labels = model(imgs, targets)
             CE_loss = CE_criterion(cos_thetas, targets)
-            lsce_loss = lsce_criterion(outputs, targets)
+            lsce_loss = lsce_criterion(cos_thetas, targets)
             loss = 2 * lsce_loss + CE_loss
             loss.backward()
             optimizer.first_step(zero_grad=True)
 
             # second forward-backward pass
-            outputs, features = model(imgs)
-            cos_thetas, norms, embeddings, labels = model(imgs, targets, model)
+            # outputs, features = model(imgs)
+            cos_thetas, norms, embeddings, labels = model(imgs, targets)
             CE_loss = CE_criterion(cos_thetas, targets)
-            lsce_loss = lsce_criterion(outputs, targets)
+            lsce_loss = lsce_criterion(cos_thetas, targets)
 
             loss = 2 * lsce_loss + CE_loss
             loss.backward() # make sure to do a full forward pass
@@ -212,7 +211,7 @@ def run_training():
 
 
             train_loss += loss
-            _, predicts = torch.max(outputs, 1)
+            _, predicts = torch.max(cos_thetas, 1)
             correct_num = torch.eq(predicts, targets).sum()
             correct_sum += correct_num
 
@@ -243,7 +242,7 @@ def run_training():
 
                 val_loss += loss
                 iter_cnt += 1
-                _, predicts = torch.max(outputs, 1)
+                _, predicts = torch.max(cos_thetas, 1)
                 correct_or_not = torch.eq(predicts, targets)
                 bingo_cnt += correct_or_not.sum().cpu()
                 pre_labels += predicts.cpu().tolist()
