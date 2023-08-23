@@ -8,6 +8,7 @@ from torch.nn import functional as F
 from .hyp_crossvit import *
 from .mobilefacenet import MobileFaceNet
 from .ir50 import Backbone
+from .head import build_head
 
 
 
