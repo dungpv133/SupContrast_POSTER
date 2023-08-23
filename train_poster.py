@@ -233,7 +233,7 @@ def run_training():
             model.eval()
             for batch_i, (imgs, targets) in enumerate(val_loader):
                 # outputs, features = model(imgs.cuda())
-                image = image.cuda()
+                imgs = imgs.cuda()
                 targets = targets.cuda()
                 cos_thetas, norms, embeddings, labels = model(imgs, targets)
                 CE_loss = CE_criterion(cos_thetas, targets)
