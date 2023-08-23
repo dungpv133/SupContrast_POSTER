@@ -129,4 +129,83 @@ class pyramid_trans_expr(nn.Module):
 
         return out, y_feat
 
+class pyramid_trans_expr_adaface(nn.Module):
+    def __init__(self, img_size=224, num_classes=7, type="large", use_ada=True, head_type='adaface'):
+        super().__init__()
+        depth = 8
+        if type == "small":
+            depth = 4
+        if type == "base":
+            depth = 6
+        if type == "large":
+            depth = 8
+        self.ada_mode = use_ada
+        self.img_size = img_size
+        self.num_classes = num_classes
+
+        self.face_landback = MobileFaceNet([112, 112],136)
+        face_landback_checkpoint = torch.load('./models/pretrain/mobilefacenet_model_best.pth.tar', map_location=lambda storage, loc: storage)
+        self.face_landback.load_state_dict(face_landback_checkpoint['state_dict'])
+
+
+        for param in self.face_landback.parameters():
+            param.requires_grad = False
+
+        ###########################################################################333
+
+
+        self.ir_back = Backbone(50, 0.0, 'ir')
+        ir_checkpoint = torch.load('./models/pretrain/ir50.pth', map_location=lambda storage, loc: storage)
+        # ir_checkpoint = ir_checkpoint["model"]
+        self.ir_back = load_pretrained_weights(self.ir_back, ir_checkpoint)
+
+        self.ir_layer = nn.Linear(1024,512)
+
+        #############################################################3
+
+        self.pyramid_fuse = HyVisionTransformer(in_chans=49, q_chanel = 49, embed_dim=512,
+                                             depth=depth, num_heads=8, mlp_ratio=2.,
+                                             drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1)
+
+
+        self.se_block = SE_block(input_dim=512)
+        # self.head = ClassificationHead(input_dim=512, target_dim=self.num_classes)
+        if use_ada:
+            self.head = build_head(head_type=head_type,
+                                   embedding_size=512,
+                                   class_num=self.num_classes,
+                                   m=0.4,
+                                   h=0.333,
+                                   t_alpha=1.0,
+                                   s=64.)
+        else:
+            self.head = ClassificationHead(input_dim=512, target_dim=self.num_classes)
+
+    def forward(self, x, labels):
+        B_ = x.shape[0]
+        x_face = F.interpolate(x, size=112)
+        _, x_face = self.face_landback(x_face)
+        x_face = x_face.view(B_, -1, 49).transpose(1,2)
+        ###############  landmark x_face ([B, 49, 512])
+
+        x_ir = self.ir_back(x)
+        x_ir = self.ir_layer(x_ir)
+        ###############  image x_ir ([B, 49, 512])
+
+        y_hat = self.pyramid_fuse(x_ir, x_face)
+        y_hat = self.se_block(y_hat)
+        # y_feat = y_hat
+        # out = self.head(y_hat)
+        if self.ada_mode:
+            norms = torch.norm(y_hat, 2, 1, True)
+            embeddings = torch.div(y_hat, norms)
+            cos_thetas = self.head(embeddings, norms, labels)
+            if isinstance(cos_thetas, tuple):
+                cos_thetas, bad_grad = cos_thetas
+                labels[bad_grad.squeeze(-1)] = -100  # ignore_index
+            return cos_thetas, norms, embeddings, labels
+        else:
+            y_feat = y_hat
+            out = self.head(y_hat)
+            return out, y_feat
 
