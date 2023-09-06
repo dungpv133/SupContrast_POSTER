@@ -14,9 +14,10 @@ from torchvision import transforms, datasets
 from util import TwoCropTransform, AverageMeter
 from util import adjust_learning_rate, warmup_learning_rate
 from util import set_optimizer, save_model
-from networks.resnet_big import SupConResNet
+from utils import *
 from losses import SupConLoss
-
+from models.emotion_hyp import pyramid_trans_expr
+from data_preprocessing.dataset_raf import RafDataSet
 try:
     import apex
     from apex import amp, optimizers
@@ -53,7 +54,7 @@ def parse_option():
     # model dataset
     parser.add_argument('--model', type=str, default='resnet50')
     parser.add_argument('--dataset', type=str, default='cifar10',
-                        choices=['cifar10', 'cifar100', 'path'], help='dataset')
+                        choices=['cifar10', 'cifar100', 'path', 'rafdb'], help='dataset')
     parser.add_argument('--mean', type=str, help='mean of dataset in path in form of str tuple')
     parser.add_argument('--std', type=str, help='std of dataset in path in form of str tuple')
     parser.add_argument('--data_folder', type=str, default=None, help='path to custom dataset')
@@ -139,6 +140,9 @@ def set_loader(opt):
     elif opt.dataset == 'path':
         mean = eval(opt.mean)
         std = eval(opt.std)
+    elif opt.dataset == 'rafdb':
+        mean = (0.4914, 0.4822, 0.4465)
+        std = (0.2023, 0.1994, 0.2010)
     else:
         raise ValueError('dataset not supported: {}'.format(opt.dataset))
     normalize = transforms.Normalize(mean=mean, std=std)
@@ -154,6 +158,12 @@ def set_loader(opt):
         normalize,
     ])
 
+    raf_db_train_transform = transforms.Compose([transforms.Resize((224, 224)),
+                                                                 transforms.RandomHorizontalFlip(),
+                                                                 transforms.ToTensor(),
+                                                                 transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                                                                      std=[0.229, 0.224, 0.225]),
+                                                                 transforms.RandomErasing(scale=(0.02, 0.1))])
     if opt.dataset == 'cifar10':
         train_dataset = datasets.CIFAR10(root=opt.data_folder,
                                          transform=TwoCropTransform(train_transform),
@@ -165,6 +175,9 @@ def set_loader(opt):
     elif opt.dataset == 'path':
         train_dataset = datasets.ImageFolder(root=opt.data_folder,
                                             transform=TwoCropTransform(train_transform))
+    elif opt.dataset == 'rafdb':
+         train_dataset = datasets.ImageFolder(root=opt.data_folder,
+                                             transform=TwoCropTransform(raf_db_train_transform))
     else:
         raise ValueError(opt.dataset)
 
@@ -177,16 +190,19 @@ def set_loader(opt):
 
 
 def set_model(opt):
-    model = SupConResNet(name=opt.model)
+    # model = SupConResNet(name=opt.model)
+    model = pyramid_trans_expr(img_size=224, num_classes=7, type='large', get_features = True)
     criterion = SupConLoss(temperature=opt.temp)
 
     # enable synchronized Batch Normalization
     if opt.syncBN:
         model = apex.parallel.convert_syncbn_model(model)
 
-    if torch.cuda.is_available():
-        if torch.cuda.device_count() > 1:
-            model.encoder = torch.nn.DataParallel(model.encoder)
+    # if torch.cuda.is_available():
+    #     if torch.cuda.device_count() > 1:
+    #         model.encoder = torch.nn.DataParallel(model.encoder)
+        model = nn.DataParallel(model, device_ids=[0, 1])
+        model.to(device)
         model = model.cuda()
         criterion = criterion.cuda()
         cudnn.benchmark = True
