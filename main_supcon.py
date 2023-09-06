@@ -16,7 +16,7 @@ from util import adjust_learning_rate, warmup_learning_rate
 from util import set_optimizer, save_model
 from utils import *
 from losses import SupConLoss
-from models.emotion_hyp import pyramid_trans_expr
+from models.emotion_hyp import pyramid_trans_expr_adaface
 from data_preprocessing.dataset_raf import RafDataSet
 try:
     import apex
@@ -191,7 +191,7 @@ def set_loader(opt):
 
 def set_model(opt):
     # model = SupConResNet(name=opt.model)
-    model = pyramid_trans_expr(img_size=224, num_classes=7, type='large', get_features = True)
+    model = pyramid_trans_expr_adaface(img_size=224, num_classes=7, type='large', get_features = True)
     criterion = SupConLoss(temperature=opt.temp)
 
     # enable synchronized Batch Normalization
