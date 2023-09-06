@@ -131,7 +131,7 @@ class pyramid_trans_expr(nn.Module):
         return out, y_feat
 
 class pyramid_trans_expr_adaface(nn.Module):
-    def __init__(self, img_size=224, num_classes=7, type="large", use_ada=True, head_type='adaface'):
+    def __init__(self, img_size=224, num_classes=7, type="large", use_ada=True, head_type='adaface', get_features = False):
         super().__init__()
         depth = 8
         if type == "small":
@@ -143,6 +143,7 @@ class pyramid_trans_expr_adaface(nn.Module):
         self.ada_mode = use_ada
         self.img_size = img_size
         self.num_classes = num_classes
+        self.get_features = get_features
 
         self.face_landback = MobileFaceNet([112, 112],136)
         face_landback_checkpoint = torch.load('./models/pretrain/mobilefacenet_model_best.pth.tar', map_location=lambda storage, loc: storage)
@@ -166,7 +167,7 @@ class pyramid_trans_expr_adaface(nn.Module):
 
         self.pyramid_fuse = HyVisionTransformer(in_chans=49, q_chanel = 49, embed_dim=512,
                                              depth=depth, num_heads=8, mlp_ratio=2.,
-                                             drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1)
+                                             drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1, get_features = self.get_features)
 
 
         self.se_block = SE_block(input_dim=512)
@@ -194,6 +195,8 @@ class pyramid_trans_expr_adaface(nn.Module):
         ###############  image x_ir ([B, 49, 512])
 
         y_hat = self.pyramid_fuse(x_ir, x_face)
+        if(self.get_features == True):
+            return y_hat
         y_hat = self.se_block(y_hat)
         # y_feat = y_hat
         # out = self.head(y_hat)
