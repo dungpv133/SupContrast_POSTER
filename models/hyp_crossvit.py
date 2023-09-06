@@ -214,7 +214,7 @@ class HyVisionTransformer(nn.Module):
     def __init__(self, in_chans=49, q_chanel = 49, num_classes=1000, embed_dim=512, depth=12,
                  num_heads=8, mlp_ratio=4., qkv_bias=True, distilled=False,
                  drop_rate=0., attn_drop_rate=0., drop_path_rate=0.,  norm_layer=None,
-                 act_layer=None, weight_init=''):
+                 act_layer=None, weight_init='', get_features = False):
 
         super().__init__()
         self.num_classes = num_classes
@@ -226,6 +226,7 @@ class HyVisionTransformer(nn.Module):
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         self.pos_embed = nn.Parameter(torch.zeros(1, in_chans + 1, embed_dim))
         self.pos_drop = nn.Dropout(p=drop_rate)
+        self.get_features = get_features
 
         n_channels = (in_chans+1) + (q_chanel+1)
         self.downsample_m = nn.Conv1d(n_channels, n_channels, kernel_size=2, stride=2)
@@ -251,6 +252,8 @@ class HyVisionTransformer(nn.Module):
         x_lm = torch.cat((xlm_cls, x_lm), dim=1)
 
         new_x = torch.cat((x, x_lm), dim=1)
+        if(self.get_features == True):
+            return new_x
 
         ###############################
         new_x_l = new_x
