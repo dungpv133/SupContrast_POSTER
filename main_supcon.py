@@ -16,7 +16,7 @@ from util import adjust_learning_rate, warmup_learning_rate
 from util import set_optimizer, save_model
 from utils import *
 from losses import SupConLoss
-from models.emotion_hyp import pyramid_trans_expr_adaface
+from models.emotion_hyp import pyramid_trans_expr_adaface, pyramid_trans_expr
 from data_preprocessing.dataset_raf import RafDataSet
 try:
     import apex
@@ -42,7 +42,7 @@ def parse_option():
     # optimization
     parser.add_argument('--learning_rate', type=float, default=0.05,
                         help='learning rate')
-    parser.add_argument('--lr_decay_epochs', type=str, default='700,800,900',
+    parser.add_argument('--lr_decay_epochs', type=str, default='20, 30, 40',
                         help='where to decay lr, can be a list')
     parser.add_argument('--lr_decay_rate', type=float, default=0.1,
                         help='decay rate for learning rate')
@@ -176,7 +176,7 @@ def set_loader(opt):
         train_dataset = datasets.ImageFolder(root=opt.data_folder,
                                             transform=TwoCropTransform(train_transform))
     elif opt.dataset == 'rafdb':
-         train_dataset = datasets.ImageFolder(root=opt.data_folder,
+         train_dataset = datasets.ImageFolder(root='/content/SupContrast_POSTER/data',
                                              transform=TwoCropTransform(raf_db_train_transform))
     else:
         raise ValueError(opt.dataset)
@@ -201,11 +201,12 @@ def set_model(opt):
     # if torch.cuda.is_available():
     #     if torch.cuda.device_count() > 1:
     #         model.encoder = torch.nn.DataParallel(model.encoder)
-        model = nn.DataParallel(model, device_ids=[0, 1])
-        model.to(device)
-        model = model.cuda()
-        criterion = criterion.cuda()
-        cudnn.benchmark = True
+        # model = nn.DataParallel(model, device_ids=[0, 1])
+        # model.to(device)
+    model = torch.nn.DataParallel(model)
+    model = model.cuda()
+    criterion = criterion.cuda()
+    cudnn.benchmark = True
 
     return model, criterion
 
@@ -223,16 +224,17 @@ def train(train_loader, model, criterion, optimizer, epoch, opt):
         data_time.update(time.time() - end)
 
         images = torch.cat([images[0], images[1]], dim=0)
-        if torch.cuda.is_available():
-            images = images.cuda(non_blocking=True)
-            labels = labels.cuda(non_blocking=True)
+        # if torch.cuda.is_available():
+        # images = images.cuda(non_blocking=True)
+        images = images.cuda()
+        labels = labels.cuda()
         bsz = labels.shape[0]
 
         # warm-up learning rate
         warmup_learning_rate(opt, epoch, idx, len(train_loader), optimizer)
 
         # compute loss
-        features = model(images)
+        features = model(images, labels)
         f1, f2 = torch.split(features, [bsz, bsz], dim=0)
         features = torch.cat([f1.unsqueeze(1), f2.unsqueeze(1)], dim=1)
         if opt.method == 'SupCon':
