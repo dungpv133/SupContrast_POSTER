@@ -176,7 +176,7 @@ def set_loader(opt):
         train_dataset = datasets.ImageFolder(root=opt.data_folder,
                                             transform=TwoCropTransform(train_transform))
     elif opt.dataset == 'rafdb':
-         train_dataset = datasets.ImageFolder(root='/content/SupContrast_POSTER/data',
+         train_dataset = datasets.ImageFolder(root=opt.data_folder,
                                              transform=TwoCropTransform(raf_db_train_transform))
     else:
         raise ValueError(opt.dataset)
