@@ -84,7 +84,10 @@ class pyramid_trans_expr(nn.Module):
         self.num_classes = num_classes
 
         self.face_landback = MobileFaceNet([112, 112],136)
-        face_landback_checkpoint = torch.load('./models/pretrain/mobilefacenet_model_best.pth.tar', map_location=lambda storage, loc: storage)
+        #running on colab
+        # face_landback_checkpoint = torch.load('./models/pretrain/mobilefacenet_model_best.pth.tar', map_location=lambda storage, loc: storage)
+        #running on kaggle
+        face_landback_checkpoint = torch.load('/kaggle/input/poster-adaface-pretrain/pretrain/pretrain/mobilefacenet_model_best.pth.tar', map_location=lambda storage, loc: storage)
         self.face_landback.load_state_dict(face_landback_checkpoint['state_dict'])
 
 
@@ -95,7 +98,10 @@ class pyramid_trans_expr(nn.Module):
 
 
         self.ir_back = Backbone(50, 0.0, 'ir')
-        ir_checkpoint = torch.load('./models/pretrain/ir50.pth', map_location=lambda storage, loc: storage)
+        #running on colab
+        # ir_checkpoint = torch.load('./models/pretrain/ir50.pth', map_location=lambda storage, loc: storage)
+        #running on kaggle
+        ir_checkpoint = torch.load('/kaggle/input/poster-adaface-pretrain/pretrain/pretrain/ir50.pth', map_location=lambda storage, loc: storage)
         # ir_checkpoint = ir_checkpoint["model"]
         self.ir_back = load_pretrained_weights(self.ir_back, ir_checkpoint)
 
