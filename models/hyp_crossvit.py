@@ -253,7 +253,10 @@ class HyVisionTransformer(nn.Module):
 
         new_x = torch.cat((x, x_lm), dim=1)
         if(self.get_features == True):
-            return new_x
+            output = F.adaptive_avg_pool2d(new_x, output_size=1)
+            output = torch.flatten(output, 1)
+            output = F.normalize(output, dim=1)
+            return output
 
         ###############################
         new_x_l = new_x
