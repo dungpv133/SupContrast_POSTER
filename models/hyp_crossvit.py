@@ -227,6 +227,11 @@ class HyVisionTransformer(nn.Module):
         self.pos_embed = nn.Parameter(torch.zeros(1, in_chans + 1, embed_dim))
         self.pos_drop = nn.Dropout(p=drop_rate)
         self.get_features = get_features
+        self.head = nn.Sequential(
+                nn.Linear(512, 512),
+                nn.ReLU(inplace=True),
+                nn.Linear(512, 128)
+            )
 
         n_channels = (in_chans+1) + (q_chanel+1)
         self.downsample_m = nn.Conv1d(n_channels, n_channels, kernel_size=2, stride=2)
@@ -253,8 +258,9 @@ class HyVisionTransformer(nn.Module):
 
         new_x = torch.cat((x, x_lm), dim=1)
         if(self.get_features == True):
-            output = F.adaptive_avg_pool2d(new_x, output_size=1)
+            output = F.adaptive_avg_pool2d(new_x, output_size=(512, 1)
             output = torch.flatten(output, 1)
+            output = self.head(output)
             output = F.normalize(output, dim=1)
             return output
 
