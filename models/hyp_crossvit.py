@@ -281,3 +281,59 @@ class HyVisionTransformer(nn.Module):
 
 
 
+
+class ConcatFeatureLandmark(nn.Module):
+    """ Vision Transformer
+    A PyTorch impl of : `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale`
+        - https://arxiv.org/abs/2010.11929
+    Includes distillation token & head support for `DeiT: Data-efficient Image Transformers`
+        - https://arxiv.org/abs/2012.12877
+    """
+
+    def __init__(self, in_chans=49, q_chanel = 49, num_classes=1000, embed_dim=512, depth=12,
+                 num_heads=8, mlp_ratio=4., qkv_bias=True, distilled=False,
+                 drop_rate=0., attn_drop_rate=0., drop_path_rate=0., norm_layer=None,
+                 act_layer=None, weight_init=''):
+
+        super().__init__()
+        self.num_classes = num_classes
+        self.in_chans = in_chans
+        self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
+
+        self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
+        self.pos_embed = nn.Parameter(torch.zeros(1, in_chans + 1, embed_dim))
+        self.pos_drop = nn.Dropout(p=drop_rate)
+        self.head = nn.Sequential(
+                nn.Linear(512, 512),
+                nn.ReLU(inplace=True),
+                nn.Linear(512, 128)
+            )
+
+        n_channels = (in_chans+1) + (q_chanel+1)
+        
+
+    def forward(self, x, x_lm):
+        B = x.shape[0]
+        x_cls = torch.mean(x, 1).view(B,1,-1)
+        x = torch.cat((x_cls, x), dim=1)
+        x = self.pos_drop(x + self.pos_embed)
+
+        xlm_cls = torch.mean(x_lm, 1).view(B,1,-1)
+        x_lm = torch.cat((xlm_cls, x_lm), dim=1)
+
+        # print(f"x_ir size: {x.size()}\nx_lm size: {x_lm.size()}")
+        new_x = torch.cat((x, x_lm), dim=1)
+        # new_x = new_x.reshape(-1, 512)
+        # print(f"new_x size: {new_x.size()}")
+        output = F.adaptive_avg_pool2d(new_x, output_size=(512, 1))
+        # print(f"output size after pooling: {output.size()}")
+        output = torch.flatten(output, 1)
+        # print(f"output size after flatten: {output.size()}")
+        # output = output.view(-1, 2, 64)
+        # print(f"output size: {output.size()}")
+        output = self.head(output)
+        output = F.normalize(output, dim=1)
+        return output
+
+
+
