@@ -110,7 +110,7 @@ def parse_option():
 
 def set_model(opt):
     # model = SupConResNet(name=opt.model)
-    model = pyramid_trans_expr_adaface(img_size=224, num_classes=7, type='large', get_features = True)
+    model = pyramid_trans_expr_adaface(img_size=224, num_classes=7, type='large', get_features = False)
     criterion = torch.nn.CrossEntropyLoss()
 
     classifier = LinearClassifier(name=opt.model, num_classes=opt.n_cls)
