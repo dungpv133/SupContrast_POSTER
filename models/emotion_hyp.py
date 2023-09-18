@@ -171,10 +171,14 @@ class pyramid_trans_expr_adaface(nn.Module):
 
         #############################################################3
 
-        self.pyramid_fuse = HyVisionTransformer(in_chans=49, q_chanel = 49, embed_dim=512,
-                                             depth=depth, num_heads=8, mlp_ratio=2.,
-                                             drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1, get_features = self.get_features)
-
+        if(self.get_features == False):
+            self.pyramid_fuse = HyVisionTransformer(in_chans=49, q_chanel = 49, embed_dim=512,
+                                                 depth=depth, num_heads=8, mlp_ratio=2.,
+                                                 drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1)
+        else:
+            self.pyramid_fuse = ConcatFeatureLanmark(in_chans=49, q_chanel = 49, embed_dim=512,
+                                                 depth=depth, num_heads=8, mlp_ratio=2.,
+                                                 drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1)
 
         self.se_block = SE_block(input_dim=512)
         # self.head = ClassificationHead(input_dim=512, target_dim=self.num_classes)
