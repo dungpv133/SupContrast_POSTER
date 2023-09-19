@@ -226,7 +226,6 @@ class HyVisionTransformer(nn.Module):
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         self.pos_embed = nn.Parameter(torch.zeros(1, in_chans + 1, embed_dim))
         self.pos_drop = nn.Dropout(p=drop_rate)
-        self.get_features = get_features
         self.head = nn.Sequential(
                 nn.Linear(512, 512),
                 nn.ReLU(inplace=True),
