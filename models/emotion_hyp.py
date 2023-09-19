@@ -134,7 +134,7 @@ class pyramid_trans_expr(nn.Module):
         y_feat = y_hat
         out = self.head(y_hat)
 
-        return out, y_feat
+        return out
 
 class pyramid_trans_expr_adaface(nn.Module):
     def __init__(self, img_size=224, num_classes=7, type="large", use_ada=True, head_type='adaface', get_features = False):
@@ -176,7 +176,7 @@ class pyramid_trans_expr_adaface(nn.Module):
                                                  depth=depth, num_heads=8, mlp_ratio=2.,
                                                  drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1)
         else:
-            self.pyramid_fuse = ConcatFeatureLanmark(in_chans=49, q_chanel = 49, embed_dim=512,
+            self.pyramid_fuse = ConcatFeatureLandmark(in_chans=49, q_chanel = 49, embed_dim=512,
                                                  depth=depth, num_heads=8, mlp_ratio=2.,
                                                  drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1)
 
