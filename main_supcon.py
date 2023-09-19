@@ -53,6 +53,8 @@ def parse_option():
 
     # model dataset
     parser.add_argument('--model', type=str, default='resnet50')
+    parser.add_argument('--ir50_path', type = str, default = '', help = 'path to pretrained ir50')
+    parser.add_argument('--mobilefacenet_path', type = str, default = '', help = 'path to pretrained mobilefacenet')
     parser.add_argument('--dataset', type=str, default='cifar10',
                         choices=['cifar10', 'cifar100', 'path', 'rafdb'], help='dataset')
     parser.add_argument('--mean', type=str, help='mean of dataset in path in form of str tuple')
@@ -191,7 +193,8 @@ def set_loader(opt):
 
 def set_model(opt):
     # model = SupConResNet(name=opt.model)
-    model = pyramid_trans_expr_adaface(img_size=224, num_classes=7, type='large', get_features = True)
+    model = pyramid_trans_expr_adaface(img_size=224, num_classes=7, type='large', get_features = True, ir5_path = opt.ir50_path,
+                                        mobilefacenet_path = opt.mobilefacenet_path)
     criterion = SupConLoss(temperature=opt.temp)
 
     # enable synchronized Batch Normalization
