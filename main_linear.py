@@ -15,7 +15,7 @@ from util import set_optimizer
 from networks.resnet_big import SupConResNet, LinearClassifier
 from models.emotion_hyp import pyramid_trans_expr_adaface, pyramid_trans_expr
 from data_preprocessing.dataset_raf import RafDataSet
-
+import torch.nn as nn
 try:
     import apex
     from apex import amp, optimizers
@@ -51,7 +51,7 @@ def parse_option():
 
     # model dataset
     parser.add_argument('--model', type=str, default='resnet50')
-    parser.add_argument('--dataset', type=str, default='cifar10',
+    parser.add_argument('--dataset', type=str, default='rafdb',
                         choices=['cifar10', 'cifar100', 'rafdb'], help='dataset')
 
     # other setting
@@ -60,16 +60,16 @@ def parse_option():
     parser.add_argument('--warm', action='store_true',
                         help='warm-up for large batch training')
 
-    parser.add_argument('--ckpt', type=str, default='',
+    parser.add_argument('--ckpt', type=str, default='/content/drive/MyDrive/SupCon_POSTER/last.pth',
                         help='path to pre-trained model')
-    parser.add_argument('--data_folder', type=str, default=None, help='path to custom training dataset')
-    parser.add_argument('--valid_folder', type=str, default=None, help='path to custom validating dataset')
+    parser.add_argument('--data_folder', type=str, default='/content/SupContrast_POSTER/data/raf-db/train', help='path to custom training dataset')
+    parser.add_argument('--valid_folder', type=str, default='/content/SupContrast_POSTER/data/raf-db/valid', help='path to custom validating dataset')
 
     opt = parser.parse_args()
 
     # set the path according to the environment
     # opt.data_folder = './datasets/'
-    opt.data_folder = '/kaggle/input/rafdb-valid/raf-db/'
+    # opt.data_folder = '/kaggle/input/rafdb-valid/raf-db/'
 
     iterations = opt.lr_decay_epochs.split(',')
     opt.lr_decay_epochs = list([])
@@ -127,7 +127,7 @@ def set_model(opt):
         #         new_state_dict[k] = v
         #     state_dict = new_state_dict
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        model = nn.DataParallel(model, device_ids=[0, 1])
+        model = nn.DataParallel(model, device_ids=[0])
         model.to(device)
         model = model.cuda()
         classifier = classifier.cuda()
