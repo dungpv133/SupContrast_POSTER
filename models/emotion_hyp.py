@@ -182,17 +182,17 @@ class pyramid_trans_expr_adaface(nn.Module):
                                                  drop_rate=0., attn_drop_rate=0., drop_path_rate=0.1)
 
         self.se_block = SE_block(input_dim=512)
-        # self.head = ClassificationHead(input_dim=512, target_dim=self.num_classes)
-        if use_ada:
-            self.head = build_head(head_type=head_type,
-                                   embedding_size=512,
-                                   class_num=self.num_classes,
-                                   m=0.4,
-                                   h=0.333,
-                                   t_alpha=1.0,
-                                   s=64.)
-        else:
-            self.head = ClassificationHead(input_dim=512, target_dim=self.num_classes)
+        self.head = ClassificationHead(input_dim=512, target_dim=self.num_classes)
+        # if use_ada:
+        #     self.head = build_head(head_type=head_type,
+        #                            embedding_size=512,
+        #                            class_num=self.num_classes,
+        #                            m=0.4,
+        #                            h=0.333,
+        #                            t_alpha=1.0,
+        #                            s=64.)
+        # else:
+        #     self.head = ClassificationHead(input_dim=512, target_dim=self.num_classes)
 
     def forward(self, x, labels):
         B_ = x.shape[0]
