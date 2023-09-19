@@ -205,7 +205,7 @@ def set_model(opt):
     #         model.encoder = torch.nn.DataParallel(model.encoder)
         # model = nn.DataParallel(model, device_ids=[0, 1])
         # model.to(device)
-    model = torch.nn.DataParallel(model, device_ids = [0, 1)
+    model = torch.nn.DataParallel(model, device_ids = [0, 1])
     model = model.cuda()
     criterion = criterion.cuda()
     cudnn.benchmark = True
