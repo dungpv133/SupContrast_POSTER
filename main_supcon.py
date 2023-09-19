@@ -193,7 +193,7 @@ def set_loader(opt):
 
 def set_model(opt):
     # model = SupConResNet(name=opt.model)
-    model = pyramid_trans_expr_adaface(img_size=224, num_classes=7, type='large', get_features = True)
+    model = pyramid_trans_expr_adaface(img_size=224, num_classes=7, type='small', get_features = True)
     criterion = SupConLoss(temperature=opt.temp)
 
     # enable synchronized Batch Normalization
