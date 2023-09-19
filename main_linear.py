@@ -13,7 +13,6 @@ from util import AverageMeter
 from util import adjust_learning_rate, warmup_learning_rate, accuracy
 from util import set_optimizer
 from networks.resnet_big import SupConResNet, LinearClassifier
-from PosterV2_7cls import *
 from models.emotion_hyp import pyramid_trans_expr_adaface, pyramid_trans_expr
 from data_preprocessing.dataset_raf import RafDataSet
 
@@ -41,7 +40,7 @@ def parse_option():
     # optimization
     parser.add_argument('--learning_rate', type=float, default=0.1,
                         help='learning rate')
-    parser.add_argument('--lr_decay_epochs', type=str, default='60,75,90',
+    parser.add_argument('--lr_decay_epochs', type=str, default='20,40,60',
                         help='where to decay lr, can be a list')
     parser.add_argument('--lr_decay_rate', type=float, default=0.2,
                         help='decay rate for learning rate')
@@ -110,7 +109,7 @@ def parse_option():
 
 def set_model(opt):
     # model = SupConResNet(name=opt.model)
-    model = pyramid_trans_expr_adaface(img_size=224, num_classes=7, type='large', get_features = False)
+    model = pyramid_trans_expr(img_size=224, num_classes=7, type='large')
     criterion = torch.nn.CrossEntropyLoss()
 
     classifier = LinearClassifier(name=opt.model, num_classes=opt.n_cls)
