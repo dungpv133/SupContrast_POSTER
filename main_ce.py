@@ -171,7 +171,7 @@ def set_loader(opt):
                                             transform=raf_db_train_transform)
         # val_dataset = datasets.ImageFolder(root=opt.valid_folder,
         #                                     transform=val_transform)
-        datasets.ImageFolder(opt.valid_folder,transforms.Compose([transforms.Resize((224, 224)),
+        val_dataset = datasets.ImageFolder(opt.valid_folder,transforms.Compose([transforms.Resize((224, 224)),
                                                             transforms.ToTensor(),
                                                             transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                                                                  std=[0.229, 0.224, 0.225]),
