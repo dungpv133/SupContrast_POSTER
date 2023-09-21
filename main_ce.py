@@ -167,7 +167,7 @@ def set_loader(opt):
         val_dataset = datasets.ImageFolder(root=opt.valid_folder,
                                             transform=val_transform)
     elif opt.dataset == 'rafdb':
-        print(f"data folder: {opt.data_folder] \n valid folder: {opt.valid_folder}")
+        print(f"data folder: {opt.data_folder} \n valid folder: {opt.valid_folder}")
         train_dataset = datasets.ImageFolder(root=opt.data_folder,
                                             transform=raf_db_train_transform)
         # val_dataset = datasets.ImageFolder(root=opt.valid_folder,
