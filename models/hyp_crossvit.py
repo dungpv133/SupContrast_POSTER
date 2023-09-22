@@ -338,13 +338,9 @@ class ConcatFeatureLandmark(nn.Module):
         # print(f"x_ir size: {x.size()}\nx_lm size: {x_lm.size()}")
         new_x = torch.cat((x, x_lm), dim=1)
         # new_x = new_x.reshape(-1, 512)
-        # print(f"new_x size: {new_x.size()}")
         output = F.adaptive_avg_pool2d(new_x, output_size=(512, 1))
-        # print(f"output size after pooling: {output.size()}")
         output = torch.flatten(output, 1)
-        # print(f"output size after flatten: {output.size()}")
         # output = output.view(-1, 2, 64)
-        # print(f"output size: {output.size()}")
         output = self.head(output)
         output = F.normalize(output, dim=1)
         return output
