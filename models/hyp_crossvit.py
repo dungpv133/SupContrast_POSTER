@@ -279,7 +279,21 @@ class HyVisionTransformer(nn.Module):
 
 
 
+class SE_block(nn.Module):
+    def __init__(self, input_dim: int):
+        super().__init__()
+        self.linear1 = torch.nn.Linear(input_dim, input_dim)
+        self.relu = nn.ReLU()
+        self.linear2 = torch.nn.Linear(input_dim, input_dim)
+        self.sigmod = nn.Sigmoid()
 
+    def forward(self, x):
+        x1 = self.linear1(x)
+        x1 = self.relu(x1)
+        x1 = self.linear2(x1)
+        x1 = self.sigmod(x1)
+        x = x * x1
+        return x
 
 class ConcatFeatureLandmark(nn.Module):
     """ Vision Transformer
@@ -302,11 +316,12 @@ class ConcatFeatureLandmark(nn.Module):
         self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
         self.pos_embed = nn.Parameter(torch.zeros(1, in_chans + 1, embed_dim))
         self.pos_drop = nn.Dropout(p=drop_rate)
-        self.head = nn.Sequential(
-                nn.Linear(512, 512),
-                nn.ReLU(inplace=True),
-                nn.Linear(512, 128)
-            )
+        # self.head = nn.Sequential(
+        #         nn.Linear(512, 512),
+        #         nn.ReLU(inplace=True),
+        #         nn.Linear(512, 128)
+        #     )
+        self.head = SE_block(input_dim = 512)
 
         n_channels = (in_chans+1) + (q_chanel+1)
         
