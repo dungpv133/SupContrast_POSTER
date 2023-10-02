@@ -13,7 +13,7 @@ from util import AverageMeter
 from util import adjust_learning_rate, warmup_learning_rate, accuracy
 from util import set_optimizer
 from networks.resnet_big import SupConResNet, LinearClassifier
-from models.emotion_hyp import pyramid_trans_expr_adaface, pyramid_trans_expr
+from models.emotion_hyp import pyramid_trans_expr_adaface, pyramid_trans_expr, ClassificationHead
 from data_preprocessing.dataset_raf import RafDataSet
 import torch.nn as nn
 try:
@@ -112,7 +112,8 @@ def set_model(opt):
     model = pyramid_trans_expr(img_size=224, num_classes=7, type='large')
     criterion = torch.nn.CrossEntropyLoss()
 
-    classifier = LinearClassifier(name=opt.model, num_classes=opt.n_cls)
+    # classifier = LinearClassifier(name=opt.model, num_classes=opt.n_cls)
+    classifier = ClassificationHead(input_dim=512, target_dim=opt.n_cls)
 
     ckpt = torch.load(opt.ckpt, map_location='cpu')
     state_dict = ckpt['model']
@@ -166,7 +167,8 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, opt):
         # with torch.no_grad():
         #     features = model.encoder(images)
         # output = classifier(features.detach())
-        output = model(images)
+        features = model(images)
+        output = classifier(features)
         loss = criterion(output, labels)
 
         # update metric
@@ -215,7 +217,9 @@ def validate(val_loader, model, classifier, criterion, opt):
 
             # forward
             # output = classifier(model.encoder(images))
-            output = model(images)
+            # output = model(images)
+            features = model(images)
+            output = classifier(features)
             loss = criterion(output, labels)
 
             # update metric
