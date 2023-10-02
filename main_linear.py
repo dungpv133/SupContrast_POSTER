@@ -135,7 +135,7 @@ def set_model(opt):
         criterion = criterion.cuda()
         cudnn.benchmark = True
 
-        model.load_state_dict(state_dict, strict=False)
+        # model.load_state_dict(state_dict, strict=False)
     else:
         raise NotImplementedError('This code requires GPU')
 
