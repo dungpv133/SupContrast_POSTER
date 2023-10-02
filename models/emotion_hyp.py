@@ -39,6 +39,29 @@ def load_pretrained_weights(model, checkpoint):
     return model
 
 
+def load_supcon_weights(model, keyword, path):
+    import collections
+    ckpt = torch.load(path, map_location=lambda storage, loc: storage)
+    state_dict = ckpt['model']
+    model_dict = model.state_dict()
+    new_state_dict = collections.OrderedDict()
+    matched_layers, discarded_layers = [], []
+    for k, v in state_dict.items():
+      if k.startswith('module.'):
+          k = k[7:]
+      if keyword in k:
+          count = len(keyword) + 1
+          k = k[count:]
+          if model_dict[k].size() == v.size():
+              new_state_dict[k] = v
+              matched_layers.append(k)
+          else:
+              discarded_layers.append(k)
+    model_dict.update(new_state_dict)
+
+    model.load_state_dict(model_dict)
+    # print('load_weight', len(discarded_layers))
+    return model
 
 
 class SE_block(nn.Module):
@@ -85,10 +108,11 @@ class pyramid_trans_expr(nn.Module):
 
         self.face_landback = MobileFaceNet([112, 112],136)
         #running on colab
-        face_landback_checkpoint = torch.load('./models/pretrain/mobilefacenet_model_best.pth.tar', map_location=lambda storage, loc: storage)
+        # face_landback_checkpoint = torch.load('./models/pretrain/mobilefacenet_model_best.pth.tar', map_location=lambda storage, loc: storage)
+        self.face_landback = load_supcon_weights(self.face_landback, 'face_landback', "/content/drive/MyDrive/SupCon_POSTER/ckpt_epoch_100.pth")
         #running on kaggle
         # face_landback_checkpoint = torch.load('/kaggle/input/poster-adaface-pretrain/pretrain/pretrain/mobilefacenet_model_best.pth.tar', map_location=lambda storage, loc: storage)
-        self.face_landback.load_state_dict(face_landback_checkpoint['state_dict'])
+        # self.face_landback.load_state_dict(face_landback_checkpoint['state_dict'])
 
 
         for param in self.face_landback.parameters():
@@ -99,13 +123,15 @@ class pyramid_trans_expr(nn.Module):
 
         self.ir_back = Backbone(50, 0.0, 'ir')
         #running on colab
-        ir_checkpoint = torch.load('./models/pretrain/ir50.pth', map_location=lambda storage, loc: storage)
+        # ir_checkpoint = torch.load('./models/pretrain/ir50.pth', map_location=lambda storage, loc: storage)
         #running on kaggle
         # ir_checkpoint = torch.load('/kaggle/input/poster-adaface-pretrain/pretrain/pretrain/ir50.pth', map_location=lambda storage, loc: storage)
         # ir_checkpoint = ir_checkpoint["model"]
-        self.ir_back = load_pretrained_weights(self.ir_back, ir_checkpoint)
+        # self.ir_back = load_pretrained_weights(self.ir_back, ir_checkpoint)
+        self.ir_back = load_supcon_weights(self.ir_back, 'ir_back', "/content/drive/MyDrive/SupCon_POSTER/ckpt_epoch_100.pth")
 
         self.ir_layer = nn.Linear(1024,512)
+        self.ir_layer = load_supcon_weights(self.ir_layer, 'ir_layer', "/content/drive/MyDrive/SupCon_POSTER/ckpt_epoch_100.pth")
 
         #############################################################3
 
@@ -132,9 +158,9 @@ class pyramid_trans_expr(nn.Module):
         y_hat = self.pyramid_fuse(x_ir, x_face)
         y_hat = self.se_block(y_hat)
         y_feat = y_hat
-        out = self.head(y_hat)
+        # out = self.head(y_hat)
 
-        return out
+        return y_feat
 
 class pyramid_trans_expr_adaface(nn.Module):
     def __init__(self, img_size=224, num_classes=7, type="large", use_ada=True, head_type='adaface', get_features = False, 
